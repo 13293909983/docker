@@ -1,0 +1,203 @@
+version: '3'
+services: 
+  nginx: 
+    image: nginx:latest
+    restart: "always"
+    container_name: nginx
+    ports: 
+      - 80:80
+    volumes:
+      - E:/nginx/conf:/etc/nginx/conf.d/
+  jmenv.tbsite.net:
+    image: edas-config-center:1.0.0
+    hostname: jmenv.tbsite.net
+    restart: "always"
+    container_name: edas-config-center
+    #ports:
+    #  - 8080:8080
+    volumes:
+      - "E:/edas-config-center/config-center-db:/opt/edas-config-center/config-center-db"
+  redis: 
+    image: redis:latest
+    hostname: redis.vip.com
+    restart: "always"
+    container_name: redis
+    #ports: 
+    #  - 6379:6379
+    command: redis-server --requirepass "M7I5JWAX"
+  #mqnamesrv: 
+  #  image: rocketmq:1.0.7
+  #  hostname: mqnamesrv.vip.com
+  #  restart: "always"
+  #  container_name: mqnamesrv
+  #  command: bin/mqnamesrv
+    #ports: 
+    #  - 9876:9876
+  #mqbroker:
+  #  image: rocketmq:1.0.7
+  #  hostname: mqbroker.vip.com
+  #  restart: "always"
+  #  container_name: mqbroker
+  #  depends_on:
+  #    - "mqnamesrv"
+  #  command: bin/mqbroker autoCreateTopicEnable=true
+  #  mem_limit: 1g
+    #ports: 
+    #  - 10911:10911
+    #  - 10909:10909
+  #  environment: 
+  #    - NAMESRV_ADDR=mqnamesrv:9876
+  #    - JAVA_OPT_EXT=-server -Xms256m -Xmx512m -Xmn256m -XX:MaxDirectMemorySize=1g
+  #rocketmq-console:
+  #  image: rocketmq-console:1.0.3
+  #  container_name: rocketmq-console
+  #  depends_on:
+  #    - "mqbroker"
+  #  ports: 
+  #    - 7001:8080
+  #  environment: 
+  #    - NAMESRV_ADDR=mqnamesrv:9876
+  yundt-center-basicdata:
+    image: ali-tomcat:1.0.0
+    container_name: yundt-center-basicdata
+    depends_on:
+      - "jmenv.tbsite.net"
+    volumes:
+      - "${PROJECT_DIR}/yundt-center-basicdata/yundt-center-basicdataservice/target/yundt-center-basicdataservice.war:/opt/taobao-tomcat-7.0.59/deploy/yundt-center-basicdata.war"
+      - "E:/logs:/logs-yes"
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx256m -Dyes.server.logWorkDir=/logs -Ddtyunxi.env.module=yundt-center-basicdata -Ddtyunxi.cmpt.service.prefix=basicdata -Ddtyunxi.service.version=0.1.0 -Ddtyunxi.registry.group=dtyunxi-lenovo-dev -Ddtyunxi.service.group=dtyunxi-lenovo-dev -Ddtyunxi.env.logger.level=info -Dfile.encoding=UTF-8 -Dhsf.server.port=14224 -Dpandora.qos.port=14343 
+  yundt-center-item:
+    image: ali-tomcat:1.0.0
+    container_name: yundt-center-item
+    depends_on:
+      - "jmenv.tbsite.net"
+      - "yundt-center-basicdata"
+    volumes:
+      - "${PROJECT_DIR}/yundt-center-item/yundt-center-itemservice/target/yundt-center-itemservice.war:/opt/taobao-tomcat-7.0.59/deploy/yundt-center-item.war"
+      - "E:/logs:/logs-yes"
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx256m -Dyes.server.logWorkDir=/logs -Ddtyunxi.env.module=yundt-center-item -Ddtyunxi.cmpt.service.prefix=item -Ddtyunxi.service.version=0.1.0 -Ddtyunxi.registry.group=dtyunxi-lenovo-dev -Ddtyunxi.service.group=dtyunxi-lenovo-dev -Ddtyunxi.env.logger.level=info -Dfile.encoding=UTF-8 -Dhsf.server.port=14224 -Dpandora.qos.port=14343
+  yundt-agg-item:
+    image: ali-tomcat:1.0.0
+    container_name: yundt-agg-item
+    depends_on:
+      - "jmenv.tbsite.net"
+      - "yundt-center-item"
+    volumes:
+      - "${PROJECT_DIR}/yundt-agg-item/yundt-agg-itemservice/target/yundt-agg-itemservice.war:/opt/taobao-tomcat-7.0.59/deploy/yundt-agg-item.war"
+      - "E:/logs:/logs-yes"
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx256m -Dyes.server.logWorkDir=/logs -Ddtyunxi.env.module=yundt-agg-item -Ddtyunxi.cmpt.service.prefix=item -Ddtyunxi.service.version=0.1.0 -Ddtyunxi.registry.group=dtyunxi-lenovo-dev -Ddtyunxi.service.group=dtyunxi-lenovo-dev -Ddtyunxi.env.logger.level=info -Dfile.encoding=UTF-8 -Dhsf.server.port=14224 -Dpandora.qos.port=14343     
+  yundt-application-mgmt:
+    image: ali-tomcat:1.0.0
+    container_name: yundt-application-mgmt
+    depends_on:
+      - "jmenv.tbsite.net"
+      - "yundt-agg-item"
+    volumes:
+      - "${PROJECT_DIR}/yundt-application-mgmt/yundt-application-mgmtservice/target/yundt-application-mgmtservice.war:/opt/taobao-tomcat-7.0.59/deploy/yundt-application-mgmt.war"
+      - "E:/logs:/logs-yes"
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx256m -Dyes.server.logWorkDir=/logs-yes -Ddtyunxi.env.module=yundt-application-mgmt -Ddtyunxi.cmpt.service.prefix=mgmt -Ddtyunxi.service.version=0.1.0 -Ddtyunxi.registry.group=dtyunxi-lenovo-dev -Ddtyunxi.service.group=dtyunxi-lenovo-dev -Ddtyunxi.env.logger.level=info -Dfile.encoding=UTF-8 -Dhsf.server.port=14224 -Dpandora.qos.port=14343
+  lenovo-sysdocking-application:
+    image: ali-tomcat:1.0.0
+    container_name: lenovo-sysdocking-application
+    depends_on:
+      - "jmenv.tbsite.net"
+      - "yundt-center-item"
+    volumes:
+      - "${PROJECT_DIR}/lenovo-sysdocking-application/lenovo-sysdocking-applicationservice/target/lenovo-sysdocking-applicationservice.war:/opt/taobao-tomcat-7.0.59/deploy/lenovo-sysdocking-application.war"
+      - "E:/logs:/logs-yes"
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx512m -Dyes.server.logWorkDir=/logs -Ddtyunxi.env.module=lenovo-sysdocking-application -Ddtyunxi.cmpt.service.prefix=sysdocking -Ddtyunxi.service.version=0.1.0 -Ddtyunxi.registry.group=dtyunxi-lenovo-dev -Ddtyunxi.service.group=dtyunxi-lenovo-dev -Ddtyunxi.env.logger.level=info -Dfile.encoding=UTF-8 -Dhsf.server.port=14224 -Dpandora.qos.port=14343  
+  lenovo-third-integration:
+    image: ali-tomcat:1.0.0
+    container_name: lenovo-third-integration
+    depends_on:
+      - "jmenv.tbsite.net"
+    volumes:
+      - "${PROJECT_DIR}/lenovo-third-integration/lenovo-third-integrationservice/target/lenovo-third-integrationservice.war:/opt/taobao-tomcat-7.0.59/deploy/lenovo-third-integration.war"
+      - "E:/logs:/logs-yes"
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx256m -Dyes.server.logWorkDir=/logs -Ddtyunxi.env.module=lenovo-third-integration -Ddtyunxi.cmpt.service.prefix=third -Ddtyunxi.service.version=0.1.0 -Ddtyunxi.registry.group=dtyunxi-lenovo-dev -Ddtyunxi.service.group=dtyunxi-lenovo-dev -Ddtyunxi.env.logger.level=info -Dfile.encoding=UTF-8 -Dhsf.server.port=14224 -Dpandora.qos.port=14343 
+  yundt-center-user:
+    image: ali-tomcat:1.0.0
+    container_name: yundt-center-user
+    depends_on:
+      - "jmenv.tbsite.net"
+    volumes:
+      - "${PROJECT_DIR}/yundt-center-user/yundt-center-userservice/target/yundt-center-userservice.war:/opt/taobao-tomcat-7.0.59/deploy/yundt-center-user.war"
+      - "E:/logs:/logs-yes"
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx256m -Dyes.server.logWorkDir=/logs -Ddtyunxi.env.module=yundt-center-user -Ddtyunxi.cmpt.service.prefix=user -Ddtyunxi.service.version=0.1.0 -Ddtyunxi.registry.group=dtyunxi-lenovo-dev -Ddtyunxi.service.group=dtyunxi-lenovo-dev -Ddtyunxi.env.logger.level=info -Dfile.encoding=UTF-8 -Dhsf.server.port=14224 -Dpandora.qos.port=14343 
+  yundt-center-shop:
+    image: ali-tomcat:1.0.0
+    container_name: yundt-center-shop
+    depends_on:
+      - "jmenv.tbsite.net"
+    volumes:
+      - "${PROJECT_DIR}/yundt-center-shop/yundt-center-shopservice/target/yundt-center-shopservice.war:/opt/taobao-tomcat-7.0.59/deploy/yundt-center-shop.war"
+      - "E:/logs:/logs-yes"
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx256m -Dyes.server.logWorkDir=/logs -Ddtyunxi.env.module=yundt-center-shop -Ddtyunxi.cmpt.service.prefix=shop -Ddtyunxi.service.version=0.1.0 -Ddtyunxi.registry.group=dtyunxi-lenovo-dev -Ddtyunxi.service.group=dtyunxi-lenovo-dev -Ddtyunxi.env.logger.level=info -Dfile.encoding=UTF-8 -Dhsf.server.port=14224 -Dpandora.qos.port=14343
+  yundt-center-member:
+    image: ali-tomcat:1.0.0
+    container_name: yundt-center-member
+    depends_on:
+      - "jmenv.tbsite.net"
+    volumes:
+      - "${PROJECT_DIR}/yundt-center-member/yundt-center-memberservice/target/yundt-center-memberservice.war:/opt/taobao-tomcat-7.0.59/deploy/yundt-center-member.war"
+      - "E:/logs:/logs-yes"
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx256m -Dyes.server.logWorkDir=/logs -Ddtyunxi.env.module=yundt-center-member -Ddtyunxi.cmpt.service.prefix=member -Ddtyunxi.service.version=0.1.0 -Ddtyunxi.registry.group=dtyunxi-lenovo-dev -Ddtyunxi.service.group=dtyunxi-lenovo-dev -Ddtyunxi.env.logger.level=info -Dfile.encoding=UTF-8 -Dhsf.server.port=14224 -Dpandora.qos.port=14343    
+  yundt-center-trade:
+    image: ali-tomcat:1.0.0
+    container_name: yundt-center-trade
+    depends_on:
+      - "jmenv.tbsite.net"
+    volumes:
+      - "${PROJECT_DIR}/yundt-center-trade/yundt-center-tradeservice/target/yundt-center-tradeservice.war:/opt/taobao-tomcat-7.0.59/deploy/yundt-center-trade.war"
+      - "E:/logs:/logs-yes"
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx256m -Dyes.server.logWorkDir=/logs -Ddtyunxi.env.module=yundt-center-trade -Ddtyunxi.cmpt.service.prefix=trade -Ddtyunxi.service.version=0.1.0 -Ddtyunxi.registry.group=dtyunxi-lenovo-dev -Ddtyunxi.service.group=dtyunxi-lenovo-dev -Ddtyunxi.env.logger.level=info -Dfile.encoding=UTF-8 -Dhsf.server.port=14224 -Dpandora.qos.port=14343 
+  yundt-agg-trade:
+    image: ali-tomcat:1.0.0
+    container_name: yundt-agg-trade
+    depends_on:
+      - "jmenv.tbsite.net"
+    volumes:
+      - "${PROJECT_DIR}/yundt-agg-trade/yundt-agg-tradeservice/target/yundt-agg-tradeservice.war:/opt/taobao-tomcat-7.0.59/deploy/yundt-agg-trade.war"
+      - "E:/logs:/logs-yes"
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx256m -Dyes.server.logWorkDir=/logs -Ddtyunxi.env.module=yundt-agg-trade -Ddtyunxi.cmpt.service.prefix=trade -Ddtyunxi.service.version=0.1.0 -Ddtyunxi.registry.group=dtyunxi-lenovo-dev -Ddtyunxi.service.group=dtyunxi-lenovo-dev -Ddtyunxi.env.logger.level=info -Dfile.encoding=UTF-8 -Dhsf.server.port=14224 -Dpandora.qos.port=14343 
+  yundt-center-promotion:
+    image: ali-tomcat:1.0.0
+    container_name: yundt-center-promotion
+    depends_on:
+      - "jmenv.tbsite.net"
+    volumes:
+      - "${PROJECT_DIR}/yundt-center-promotion/yundt-center-promotionservice/target/yundt-center-promotionservice.war:/opt/taobao-tomcat-7.0.59/deploy/yundt-center-promotion.war"
+      - "E:/logs:/logs-yes"
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx256m -Dyes.server.logWorkDir=/logs -Ddtyunxi.env.module=yundt-center-promotion -Ddtyunxi.cmpt.service.prefix=promotion -Ddtyunxi.service.version=0.1.0 -Ddtyunxi.registry.group=dtyunxi-lenovo-dev -Ddtyunxi.service.group=dtyunxi-lenovo-dev -Ddtyunxi.env.logger.level=info -Dfile.encoding=UTF-8 -Dhsf.server.port=14224 -Dpandora.qos.port=14343 
+  yundt-center-content:
+    image: ali-tomcat:1.0.0
+    container_name: yundt-center-content
+    depends_on:
+      - "jmenv.tbsite.net"
+    volumes:
+      - "${PROJECT_DIR}/yundt-center-content/yundt-center-contentservice/target/yundt-center-contentservice.war:/opt/taobao-tomcat-7.0.59/deploy/yundt-center-content.war"
+      - "E:/logs:/logs-yes"
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx256m -Dyes.server.logWorkDir=/logs -Ddtyunxi.env.module=yundt-center-content -Ddtyunxi.cmpt.service.prefix=content -Ddtyunxi.service.version=0.1.0 -Ddtyunxi.registry.group=dtyunxi-lenovo-dev -Ddtyunxi.service.group=dtyunxi-lenovo-dev -Ddtyunxi.env.logger.level=info -Dfile.encoding=UTF-8 -Dhsf.server.port=14224 -Dpandora.qos.port=14343 
+  yundt-center-logistics:
+    image: ali-tomcat:1.0.0
+    container_name: yundt-center-logistics
+    depends_on:
+      - "jmenv.tbsite.net"
+    volumes:
+      - "${PROJECT_DIR}/yundt-center-logistics/yundt-center-logisticsservice/target/yundt-center-logisticsservice.war:/opt/taobao-tomcat-7.0.59/deploy/yundt-center-logistics.war"
+      - "E:/logs:/logs-yes"
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx256m -Dyes.server.logWorkDir=/logs -Ddtyunxi.env.module=yundt-center-logistics -Ddtyunxi.cmpt.service.prefix=logistics -Ddtyunxi.service.version=0.1.0 -Ddtyunxi.registry.group=dtyunxi-lenovo-dev -Ddtyunxi.service.group=dtyunxi-lenovo-dev -Ddtyunxi.env.logger.level=info -Dfile.encoding=UTF-8 -Dhsf.server.port=14224 -Dpandora.qos.port=14343       
